@@ -1,7 +1,7 @@
 /* app.js — Iran Conflict Monitor Dashboard */
 
 /* === EMBEDDED DATA === */
-const NEWS_DATA = [{"title":"Trump Redesignates Houthis as Foreign Terrorist Organization","source":"Reuters","source_type":"news_agency","date":"2025-01-22","summary":"President Trump signed an executive order redesignating the Houthi movement in Yemen as a Foreign Terrorist Organization (FTO) and Specially Designated Global Terrorist (SDGT), reversing a Biden-era decision. The move was part of a broader maximum-pressure campaign targeting Iran and its proxies. The redesignation enables broader sanctions and restrictions on entities doing business with the Houthis.","url":"https://www.reuters.com/world/middle-east/trump-redesignates-houthis-terrorist-organization-2025-01-22/","confirmed":true,"category":"regional_proxy"},{"title":"Trump Sends Letter to Iran's Khamenei Requesting New Nuclear Deal","source":"PBS NewsHour","source_type":"news_agency","date":"2025-03-07","summary":"President Trump announced he had sent a letter to Iran's Supreme Leader Ali Khamenei requesting a new nuclear deal with Tehran. Trump stated he had warned that without negotiations, there would be military consequences. The letter came as Trump resumed maximum pressure sanctions on Iran following his return to the presidency and while authorizing major strikes on Houthi targets in Yemen. Earlier, in February, Khamenei had described proposed discussions with the US as 'not intelligent, wise or honorable.'","url":"https://www.pbs.org/newshour/world/a-timeline-of-tensions-over-irans-nuclear-program-as-talks-with-u-s-approach","confirmed":true,"category":"diplomacy"},{"title":"Houthis Fire Missile at US Air Force F-16, Shoot Down MQ-9 Reaper Drone Over Yemen","source":"CENTCOM","source_type":"military","date":"2025-03-11","summary":"Houthi forces announced the resumption of attacks against Israeli-linked shipping in the Red Sea, firing a missile at a US Air Force F-16 and shooting down a US MQ-9 Reaper drone over Yemen. This escalation followed the Houthis' announcement that they would resume at... [truncated, 48809 chars]
+const NEWS_DATA = [{"title":"Trump Redesignates Houthis as Foreign Terrorist Organization","source":"Reuters","source_type":"news_agency","date":"2025-01-22","summary":"President Trump signed an executive order redesignating the Houthi movement in Yemen as a Foreign Terrorist Organization (FTO) and Specially Designated Global Terrorist (SDGT), reversing a Biden-era decision. The move was part of a broader maximum-pressure campaign targeting Iran and its proxies. The redesignation enables broader sanctions and restrictions on entities doing business with the Houthis.","url":"https://www.reuters.com/world/middle-east/trump-redesignates-houthis-terrorist-organization-2025-01-22/","confirmed":true,"category":"regional_proxy","time":"12:01"},{"title":"Trump Sends Letter to Iran's Khamenei Requesting New Nuclear Deal","source":"PBS NewsHour","source_type":"news_agency","date":"2025-03-07","summary":"President Trump announced he had sent a letter to Iran's Supreme Leader Ali Khamenei requesting a new nuclear deal with Tehran. Trump stated he had warned that without negotiations, there would be military consequences. The letter came as Trump resumed maximum pressure sanctions on Iran following his return to the presidency and while authorizing major strikes on Houthi targets in Yemen. Earlier, in February, Khamenei had described proposed discussions with the US as 'not intelligent, wise or honorable.'","url":"https://www.pbs.org/newshour/world/a-timeline-of-tensions-over-irans-nuclear-program-as-talks-with-u-s-approach","confirmed":true,"category":"diplomacy","time":"21:10"},{"title":"Houthis Fire Missile at US Air Force F-16, Shoot Down MQ-9 Reaper Drone Over Yemen","source":"CENTCOM","source_type":"military","date":"2025-03-11","summary":"Houthi forces announced the resumption of attacks against Israeli-linked shipping in the Red Sea, firing a missile at a US Air Force F-16 and shooting down a US MQ-9 Reaper drone over Yemen. This escalation followed the Houthis' announce... [truncated, 49709 chars]
 
 const STRIKES_DATA = [{"date":"2024-01-12","location_name":"Sanaa (Al-Dailami Air Base)","country":"Yemen","lat":15.4783,"lng":44.2194,"attacker":"United States","target":"Houthi missile launch and drone facilities, Al-Dailami Air Base","description":"First wave of Operation Poseidon Archer. US and UK struck approximately 30 Houthi military sites across Yemen including Al-Dailami Air Base near Sanaa. Destroyed/degraded over 27 missile and drone launch facilities.","confirmed":true,"source":"ACLED / USNI News","url":"https://acleddata.com/update/yemen-situation-update-january-2024","weapon_type":"airstrike"},{"date":"2024-01-12","location_name":"Hodeidah (Hudaydah)","country":"Yemen","lat":14.798,"lng":42.9511,"attacker":"United States","target":"Houthi coastal defense and missile storage","description":"Part of initial Operation Poseidon Archer strikes. US and UK targeted Houthi military infrastructure in Hudaydah, a key Red Sea port city used for Houthi weapons transfers.","confirmed":true,"source":"BBC News","url":"https://www.bbc.com/news/world-middle-east-68064422","weapon_type":"airstrike"},{"date":"2024-01-12","location_name":"Taiz","country":"Yemen","lat":13.5795,"lng":44.018,"attacker":"United States","target":"Houthi military positions","description":"Operation Poseidon Archer initial wave. Strikes on Houthi military targets in Taiz governorate.","confirmed":true,"source":"USNI News","url":"https://news.usni.org/2024/01/22/u-s-u-k-launch-major-strike-missions-on-houthi-missile-drone-infrastructure","weapon_type":"airstrike"},{"date":"2024-01-22","location_name":"Sanaa","country":"Yemen","lat":15.3694,"lng":44.191,"attacker":"United States","target":"Houthi underground weapon storage site, missile and air surveillance capabilities","description":"Second joint US-UK strike under Operation Poseidon Archer. Eight targets hit including an underground storage site. ~25-30 precision munitions deployed including Tomahawk cruise missiles. Four RAF Typhoons participa... [truncated, 40763 chars]
 
@@ -110,13 +110,17 @@ let state = {
   showAssets: true,
   showStrikes: true,
   dateFrom: null,
-  dateTo: null
+  dateTo: null,
+  kpiFilter: null  // active KPI filter: "total"|"operations"|"unconfirmed"|"nuclear"|null
 };
 
 let map = null;
 let strikeMarkers = [];
 let assetMarkers = [];
 let mapInitialized = false;
+
+/* === REFRESH INTERVAL === */
+let refreshTimer = null;
 
 /* === INIT === */
 document.addEventListener("DOMContentLoaded", () => {
@@ -125,15 +129,50 @@ document.addEventListener("DOMContentLoaded", () => {
   initCategoryFilters();
   initSourceFilters();
   initSearch();
+  initKPIClicks();
   renderKPIs();
   renderNewsFeed();
+  // Defer graph to ensure canvas has layout dimensions
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      renderMentionGraph();
+    });
+  });
   updateTimestamp();
+  startAutoRefresh();
+
+  // Resize handler for graph
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => renderMentionGraph(), 150);
+  });
 
   // Hash routing: auto-open map tab if #map in URL
   if (window.location.hash === "#map" || window.location.search.includes("tab=map")) {
     setTimeout(() => document.querySelector('[data-tab="map"]').click(), 100);
   }
 });
+
+/* === AUTO-REFRESH (every 5 minutes) === */
+function startAutoRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => {
+    renderNewsFeed();
+    renderKPIs();
+    renderMentionGraph();
+    updateTimestamp();
+    updateRefreshCountdown();
+  }, 5 * 60 * 1000); // 5 minutes
+  updateRefreshCountdown();
+}
+
+function updateRefreshCountdown() {
+  const el = document.getElementById("refresh-indicator");
+  if (!el) return;
+  const textEl = el.querySelector(".refresh-text");
+  if (textEl) textEl.textContent = "Auto-refresh: 5 min";
+}
 
 /* === THEME TOGGLE === */
 function initThemeToggle() {
@@ -155,6 +194,8 @@ function initThemeToggle() {
       if (map) {
         map.invalidateSize();
       }
+      // Re-render mention graph for theme change
+      renderMentionGraph();
     });
   }
 }
@@ -195,6 +236,9 @@ function initCategoryFilters() {
     chip.textContent = CATEGORY_LABELS[cat] || cat;
     chip.dataset.category = cat;
     chip.addEventListener("click", () => {
+      // Clear KPI filter when using chip filters
+      state.kpiFilter = null;
+      document.querySelectorAll(".kpi-card").forEach(c => c.classList.remove("kpi-card--active"));
       if (state.categoryFilters.has(cat)) {
         state.categoryFilters.delete(cat);
         chip.classList.remove("active");
@@ -217,6 +261,9 @@ function initSourceFilters() {
     chip.textContent = SOURCE_TYPE_LABELS[st] || st;
     chip.dataset.source = st;
     chip.addEventListener("click", () => {
+      // Clear KPI filter when using chip filters
+      state.kpiFilter = null;
+      document.querySelectorAll(".kpi-card").forEach(c => c.classList.remove("kpi-card--active"));
       if (state.sourceFilters.has(st)) {
         state.sourceFilters.delete(st);
         chip.classList.remove("active");
@@ -265,6 +312,38 @@ function renderKPIs() {
   animateKPI("kpi-countries", countriesSet.size);
   animateKPI("kpi-unconfirmed", unconfirmed);
   animateKPI("kpi-nuclear", nuclear);
+
+  // Update active state on KPI cards
+  document.querySelectorAll(".kpi-card[data-kpi]").forEach(card => {
+    card.classList.toggle("kpi-card--active", state.kpiFilter === card.dataset.kpi);
+  });
+}
+
+function initKPIClicks() {
+  // Use event delegation on the KPI row for more reliable click handling
+  const kpiRow = document.querySelector(".kpi-row");
+  if (!kpiRow) return;
+  kpiRow.addEventListener("click", (e) => {
+    const card = e.target.closest(".kpi-card[data-kpi]");
+    if (!card) return;
+    const filter = card.dataset.kpi;
+    // Countries KPI is not filterable
+    if (filter === "countries") return;
+    // Toggle: clicking the same KPI again clears the filter
+    if (state.kpiFilter === filter) {
+      state.kpiFilter = null;
+    } else {
+      state.kpiFilter = filter;
+    }
+    // Clear chip-based category/source filters when using KPI
+    state.categoryFilters.clear();
+    state.sourceFilters.clear();
+    document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+    renderNewsFeed();
+    renderKPIs();
+    // Scroll feed into view
+    document.getElementById("news-feed").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 }
 
 function animateKPI(id, target) {
@@ -282,14 +361,33 @@ function animateKPI(id, target) {
 function getFilteredNews() {
   let items = [...NEWS_DATA];
 
-  // Category filter
-  if (state.categoryFilters.size > 0) {
-    items = items.filter(n => state.categoryFilters.has(n.category));
-  }
+  // KPI filter (takes precedence over chip filters)
+  if (state.kpiFilter) {
+    switch (state.kpiFilter) {
+      case "total":
+        // Show all — no filter
+        break;
+      case "operations":
+        items = items.filter(n => n.category === "military_operation" &&
+          new Date(n.date) >= new Date("2026-01-01"));
+        break;
+      case "unconfirmed":
+        items = items.filter(n => !n.confirmed);
+        break;
+      case "nuclear":
+        items = items.filter(n => n.category === "nuclear_program");
+        break;
+    }
+  } else {
+    // Category filter
+    if (state.categoryFilters.size > 0) {
+      items = items.filter(n => state.categoryFilters.has(n.category));
+    }
 
-  // Source filter
-  if (state.sourceFilters.size > 0) {
-    items = items.filter(n => state.sourceFilters.has(n.source_type));
+    // Source filter
+    if (state.sourceFilters.size > 0) {
+      items = items.filter(n => state.sourceFilters.has(n.source_type));
+    }
   }
 
   // Search
@@ -338,6 +436,7 @@ function renderNewsFeed() {
       <article class="news-item ${isUnconfirmed ? "news-item--unconfirmed" : ""}${readerNote ? " news-item--disputed" : ""}">
         <div class="news-item-header">
           <span class="news-date">${item.date}</span>
+          ${item.time ? `<span class="news-time">${formatTime(item.time)}</span>` : ""}
           <span class="sep">·</span>
           <span class="news-source">${item.source}</span>
           <span class="badge badge-source">${SOURCE_TYPE_LABELS[item.source_type] || item.source_type}</span>
@@ -359,6 +458,142 @@ function escapeHTML(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
+}
+
+function formatTime(timeStr) {
+  const [h, m] = timeStr.split(":").map(Number);
+  const suffix = h >= 12 ? "PM" : "AM";
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour12}:${m.toString().padStart(2, "0")} ${suffix}`;
+}
+
+/* === MENTION VOLUME GRAPH === */
+function renderMentionGraph() {
+  const canvas = document.getElementById("mention-graph");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+
+  // Aggregate events by month
+  const monthCounts = {};
+  NEWS_DATA.forEach(item => {
+    const d = new Date(item.date);
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "00");
+    monthCounts[key] = (monthCounts[key] || 0) + 1;
+  });
+
+  // Also count strikes per month
+  STRIKES_DATA.forEach(item => {
+    const d = new Date(item.date);
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "00");
+    monthCounts[key] = (monthCounts[key] || 0) + 1;
+  });
+
+  const sortedMonths = Object.keys(monthCounts).sort();
+  const values = sortedMonths.map(k => monthCounts[k]);
+  const maxVal = Math.max(...values, 1);
+
+  // Format month labels
+  const monthLabels = sortedMonths.map(k => {
+    const [y, m] = k.split("-");
+    const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return names[parseInt(m) - 1] + " '" + y.slice(2);
+  });
+
+  // Canvas sizing — use explicit dimensions if getBoundingClientRect returns 0
+  const wrap = canvas.parentElement;
+  let rectW = wrap.offsetWidth || wrap.clientWidth;
+  let rectH = wrap.offsetHeight || wrap.clientHeight;
+  // Fallback if layout not computed yet
+  if (rectW < 10) rectW = 800;
+  if (rectH < 10) rectH = 180;
+  canvas.width = rectW * dpr;
+  canvas.height = rectH * dpr;
+  canvas.style.width = rectW + "px";
+  canvas.style.height = rectH + "px";
+  ctx.scale(dpr, dpr);
+
+  const w = rectW;
+  const h = rectH;
+  const padLeft = 40;
+  const padRight = 16;
+  const padTop = 8;
+  const padBottom = 32;
+  const chartW = w - padLeft - padRight;
+  const chartH = h - padTop - padBottom;
+  const barCount = values.length;
+  const barGap = Math.max(2, Math.floor(chartW / barCount * 0.2));
+  const barW = Math.max(4, (chartW - barGap * (barCount + 1)) / barCount);
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Detect theme
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const textColor = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
+  const gridColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+
+  // Y-axis gridlines
+  const gridSteps = 4;
+  ctx.font = "11px Inter, sans-serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  for (let i = 0; i <= gridSteps; i++) {
+    const val = Math.round(maxVal / gridSteps * i);
+    const y = padTop + chartH - (chartH * (val / maxVal));
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padLeft, y);
+    ctx.lineTo(w - padRight, y);
+    ctx.stroke();
+    ctx.fillStyle = textColor;
+    ctx.fillText(val.toString(), padLeft - 6, y);
+  }
+
+  // Bars
+  values.forEach((val, i) => {
+    const x = padLeft + barGap + i * (barW + barGap);
+    const barH = (val / maxVal) * chartH;
+    const y = padTop + chartH - barH;
+
+    // Gradient fill
+    const grad = ctx.createLinearGradient(x, y, x, padTop + chartH);
+    grad.addColorStop(0, "rgba(59,130,246,0.9)");
+    grad.addColorStop(1, "rgba(59,130,246,0.3)");
+    ctx.fillStyle = grad;
+
+    // Rounded top
+    const r = Math.min(3, barW / 2);
+    ctx.beginPath();
+    ctx.moveTo(x, padTop + chartH);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.lineTo(x + barW - r, y);
+    ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+    ctx.lineTo(x + barW, padTop + chartH);
+    ctx.closePath();
+    ctx.fill();
+
+    // Value label on top of bar
+    if (barW > 14) {
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "center";
+      ctx.font = "10px JetBrains Mono, monospace";
+      ctx.fillText(val.toString(), x + barW / 2, y - 5);
+    }
+
+    // X-axis label
+    if (barCount <= 16 || i % 2 === 0) {
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "center";
+      ctx.font = "10px Inter, sans-serif";
+      ctx.save();
+      ctx.translate(x + barW / 2, padTop + chartH + 10);
+      if (barCount > 12) ctx.rotate(-0.5);
+      ctx.fillText(monthLabels[i], 0, 0);
+      ctx.restore();
+    }
+  });
 }
 
 /* === TIMESTAMP === */

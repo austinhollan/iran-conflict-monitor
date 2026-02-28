@@ -57,25 +57,36 @@
     <div class="tab-content active" id="tab-news">
       <!-- KPI Cards -->
       <div class="kpi-row" role="region" aria-label="Key metrics">
-        <div class="kpi-card">
+        <div class="kpi-card" data-kpi="total" title="Click to show all events">
           <div class="kpi-label">Total Events</div>
           <div class="kpi-value" id="kpi-total">—</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" data-kpi="operations" title="Click to filter active operations">
           <div class="kpi-label">Active Operations</div>
           <div class="kpi-value" id="kpi-operations">—</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" data-kpi="countries">
           <div class="kpi-label">Countries Involved</div>
           <div class="kpi-value" id="kpi-countries">—</div>
         </div>
-        <div class="kpi-card kpi-card--alert">
+        <div class="kpi-card kpi-card--alert" data-kpi="unconfirmed" title="Click to filter unconfirmed reports">
           <div class="kpi-label">Unconfirmed Reports</div>
           <div class="kpi-value" id="kpi-unconfirmed">—</div>
         </div>
-        <div class="kpi-card kpi-card--warning">
+        <div class="kpi-card kpi-card--warning" data-kpi="nuclear" title="Click to filter nuclear site events">
           <div class="kpi-label">Nuclear Site Strikes</div>
           <div class="kpi-value" id="kpi-nuclear">—</div>
+        </div>
+      </div>
+
+      <!-- Mention Volume Graph -->
+      <div class="mention-graph-container">
+        <div class="mention-graph-header">
+          <h3 class="mention-graph-title">Event Volume by Month</h3>
+          <span class="mention-graph-subtitle">News + strikes combined</span>
+        </div>
+        <div class="mention-graph-canvas-wrap">
+          <canvas id="mention-graph"></canvas>
         </div>
       </div>
 
@@ -101,7 +112,13 @@
       <!-- Results info -->
       <div class="results-info">
         <span id="results-count" class="results-count">Loading...</span>
-        <span class="results-updated" id="last-updated"></span>
+        <div class="results-info-right">
+          <span class="refresh-indicator" id="refresh-indicator">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9h3m-12 9a9 9 0 0 1-9-9m9 9v3M3 12a9 9 0 0 1 9-9m-9 9H0m12-9V0"/></svg>
+            <span class="refresh-text">Auto-refresh: 5 min</span>
+          </span>
+          <span class="results-updated" id="last-updated"></span>
+        </div>
       </div>
 
       <!-- News Feed -->

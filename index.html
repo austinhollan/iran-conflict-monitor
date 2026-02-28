@@ -85,8 +85,8 @@
           <h3 class="mention-graph-title">Event Volume by Month</h3>
           <span class="mention-graph-subtitle">News + strikes combined</span>
         </div>
-        <div class="mention-graph-canvas-wrap">
-          <canvas id="mention-graph"></canvas>
+        <div class="mention-graph-bars-wrap" id="mention-graph-bars">
+          <!-- Bars rendered by JS -->
         </div>
       </div>
 
@@ -118,6 +118,27 @@
             <span class="refresh-text">Auto-refresh: 5 min</span>
           </span>
           <span class="results-updated" id="last-updated"></span>
+        </div>
+      </div>
+
+      <!-- Video Feed -->
+      <div class="video-section" id="video-section">
+        <div class="video-section-header">
+          <div class="video-section-title-row">
+            <h3 class="video-section-title">Video Feed</h3>
+            <span class="video-section-subtitle">Sources: X, news outlets</span>
+          </div>
+          <label class="video-toggle-label">
+            <input type="checkbox" id="video-toggle" checked>
+            <span>Show Videos</span>
+          </label>
+        </div>
+        <div class="video-disclaimer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Viewer discretion advised. Video content has not been validated or filtered. Sources are unverified social media and news outlets.</span>
+        </div>
+        <div class="video-grid" id="video-grid">
+          <!-- Videos rendered by JS -->
         </div>
       </div>
 
@@ -184,6 +205,7 @@
   </main>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
   <script src="./app.js"></script>
 </body>
 </html>

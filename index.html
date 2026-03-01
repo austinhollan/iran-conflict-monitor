@@ -1,213 +1,230 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Iran Conflict Monitor — Real-Time Intelligence Dashboard</title>
-  <meta name="description" content="Real-time conflict monitoring dashboard for the Iran-US/Israel military conflict">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="./base.css">
-  <link rel="stylesheet" href="./style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iran Conflict Monitor</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <a href="#main-content" class="sr-only">Skip to main content</a>
 
-  <!-- HEADER -->
-  <header class="header" role="banner">
-    <div class="header-left">
-      <div class="logo" aria-hidden="true">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
-          <circle cx="16" cy="16" r="8" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
-          <circle cx="16" cy="16" r="2.5" fill="currentColor"/>
-          <line x1="16" y1="0" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/>
-          <line x1="16" y1="24" x2="16" y2="32" stroke="currentColor" stroke-width="1.5"/>
-          <line x1="0" y1="16" x2="8" y2="16" stroke="currentColor" stroke-width="1.5"/>
-          <line x1="24" y1="16" x2="32" y2="16" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-      </div>
-      <div class="header-titles">
-        <h1 class="header-title">IRAN CONFLICT MONITOR</h1>
-        <p class="header-subtitle">Real-Time Intelligence Dashboard</p>
-      </div>
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-brand">Iran Conflict Monitor</div>
+    <div class="nav-subtitle">Real-Time Intelligence Dashboard</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="news">News Feed</button>
+      <button class="nav-tab" data-tab="map">Strike Map</button>
+      <button class="nav-tab" data-tab="assets">Military Assets</button>
     </div>
-    <nav class="header-nav" role="navigation" aria-label="Main navigation">
-      <button class="tab-btn active" data-tab="news" aria-selected="true" role="tab">NEWS FEED</button>
-      <button class="tab-btn" data-tab="map" aria-selected="false" role="tab">STRIKE MAP</button>
-    </nav>
-    <div class="header-right">
-      <div class="live-indicator" aria-label="Live data indicator">
-        <span class="live-dot"></span>
-        <span>LIVE</span>
-      </div>
-      <button class="theme-toggle" data-theme-toggle aria-label="Switch to light mode">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-        </svg>
-      </button>
+    <div class="nav-status">
+      <span class="status-dot"></span>
+      <span id="last-updated">Loading...</span>
     </div>
-  </header>
+  </nav>
 
-  <!-- MAIN CONTENT -->
-  <main id="main-content" class="main">
-    <!-- NEWS FEED TAB -->
-    <div class="tab-content active" id="tab-news">
-      <!-- KPI Cards -->
-      <div class="kpi-row" role="region" aria-label="Key metrics">
-        <div class="kpi-card" data-kpi="total" title="Click to show all events">
-          <div class="kpi-label">Total Events</div>
-          <div class="kpi-value" id="kpi-total">—</div>
-        </div>
-        <div class="kpi-card" data-kpi="operations" title="Click to filter active operations">
-          <div class="kpi-label">Active Operations</div>
-          <div class="kpi-value" id="kpi-operations">—</div>
-        </div>
-        <div class="kpi-card" data-kpi="countries">
-          <div class="kpi-label">Countries Involved</div>
-          <div class="kpi-value" id="kpi-countries">—</div>
-        </div>
-        <div class="kpi-card kpi-card--alert" data-kpi="unconfirmed" title="Click to filter unconfirmed reports">
-          <div class="kpi-label">Unconfirmed Reports</div>
-          <div class="kpi-value" id="kpi-unconfirmed">—</div>
-        </div>
-        <div class="kpi-card kpi-card--warning" data-kpi="nuclear" title="Click to filter nuclear site events">
-          <div class="kpi-label">Nuclear Site Strikes</div>
-          <div class="kpi-value" id="kpi-nuclear">—</div>
-        </div>
+  <!-- NEWS TAB -->
+  <div id="tab-news" class="tab-content active">
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-events">-</div>
+        <div class="stat-label">Total Events</div>
       </div>
-
-      <!-- Mention Volume Graph -->
-      <div class="mention-graph-container">
-        <div class="mention-graph-header">
-          <h3 class="mention-graph-title">Event Volume by Month</h3>
-          <span class="mention-graph-subtitle">News + strikes combined</span>
-        </div>
-        <div class="mention-graph-bars-wrap" id="mention-graph-bars">
-          <!-- Bars rendered by JS -->
-        </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-active-ops">-</div>
+        <div class="stat-label">Active Operations</div>
       </div>
-
-      <!-- Filter Bar -->
-      <div class="filter-bar" role="toolbar" aria-label="Filters">
-        <div class="filter-section">
-          <label class="filter-label">Category</label>
-          <div class="filter-chips" id="category-filters"></div>
-        </div>
-        <div class="filter-section">
-          <label class="filter-label">Source Type</label>
-          <div class="filter-chips" id="source-filters"></div>
-        </div>
-        <div class="filter-section filter-search">
-          <label class="filter-label" for="search-input">Search</label>
-          <div class="search-wrapper">
-            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input type="text" id="search-input" class="search-input" placeholder="Filter by keyword..." autocomplete="off">
-          </div>
-        </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-countries">-</div>
+        <div class="stat-label">Countries Involved</div>
       </div>
-
-      <!-- Results info -->
-      <div class="results-info">
-        <span id="results-count" class="results-count">Loading...</span>
-        <div class="results-info-right">
-          <span class="refresh-indicator" id="refresh-indicator">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9h3m-12 9a9 9 0 0 1-9-9m9 9v3M3 12a9 9 0 0 1 9-9m-9 9H0m12-9V0"/></svg>
-            <span class="refresh-text">Auto-refresh: 5 min</span>
-          </span>
-          <span class="results-updated" id="last-updated"></span>
-        </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-unconfirmed">-</div>
+        <div class="stat-label">Unconfirmed Reports</div>
       </div>
-
-      <!-- Video Feed -->
-      <div class="video-section" id="video-section">
-        <div class="video-section-header">
-          <div class="video-section-title-row">
-            <h3 class="video-section-title">Video Feed</h3>
-            <span class="video-section-subtitle">Sources: X, news outlets</span>
-          </div>
-          <label class="video-toggle-label">
-            <input type="checkbox" id="video-toggle" checked>
-            <span>Show Videos</span>
-          </label>
-        </div>
-        <div class="video-disclaimer">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span>Viewer discretion advised. Video content has not been validated or filtered. Sources are unverified social media and news outlets.</span>
-        </div>
-        <div class="video-grid" id="video-grid">
-          <!-- Videos rendered by JS -->
-        </div>
-      </div>
-
-      <!-- News Feed -->
-      <div class="news-feed" id="news-feed" role="feed" aria-label="News feed">
-        <!-- News items rendered by JS -->
+      <div class="stat-card">
+        <div class="stat-value" id="stat-nuclear">-</div>
+        <div class="stat-label">Nuclear Events</div>
       </div>
     </div>
 
-    <!-- STRIKE MAP TAB -->
-    <div class="tab-content" id="tab-map">
-      <div class="map-container">
-        <div class="map-sidebar" id="map-sidebar">
-          <div class="sidebar-section">
-            <h3 class="sidebar-title">Strike Count by Attacker</h3>
-            <div id="strike-summary"></div>
-          </div>
-          <div class="sidebar-section">
-            <h3 class="sidebar-title">Attacker Filter</h3>
-            <div id="attacker-filters"></div>
-          </div>
-          <div class="sidebar-section">
-            <h3 class="sidebar-title">Layers</h3>
-            <label class="toggle-label">
-              <input type="checkbox" id="toggle-assets" checked>
-              <span>Military Assets</span>
-            </label>
-            <label class="toggle-label">
-              <input type="checkbox" id="toggle-strikes" checked>
-              <span>Strikes</span>
-            </label>
-          </div>
-          <div class="sidebar-section">
-            <h3 class="sidebar-title">Date Range</h3>
-            <div class="date-range">
-              <label class="date-label">
-                <span>From</span>
-                <input type="date" id="date-from" class="date-input">
-              </label>
-              <label class="date-label">
-                <span>To</span>
-                <input type="date" id="date-to" class="date-input">
-              </label>
-              <button class="btn-reset" id="reset-dates">Reset</button>
-            </div>
-          </div>
-        </div>
-        <div class="map-wrapper">
-          <div id="map" class="map"></div>
-          <div class="map-legend" id="map-legend">
-            <div class="legend-title">Legend</div>
-            <div class="legend-section">
-              <div class="legend-subtitle">Strikes</div>
-              <div id="legend-strikes"></div>
-            </div>
-            <div class="legend-section">
-              <div class="legend-subtitle">Assets</div>
-              <div id="legend-assets"></div>
-            </div>
-          </div>
-        </div>
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Category</label>
+        <select id="filter-category">
+          <option value="">All Categories</option>
+          <option value="military_operation">Military Operation</option>
+          <option value="nuclear_program">Nuclear Program</option>
+          <option value="diplomacy">Diplomacy</option>
+          <option value="sanctions">Sanctions</option>
+          <option value="regional_proxy">Regional Proxy</option>
+          <option value="military_deployment">Military Deployment</option>
+          <option value="civilian_impact">Civilian Impact</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Source Type</label>
+        <select id="filter-source">
+          <option value="">All Sources</option>
+          <option value="military">Military</option>
+          <option value="government">Government</option>
+          <option value="news_agency">News Agency</option>
+          <option value="think_tank">Think Tank</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Status</label>
+        <select id="filter-confirmed">
+          <option value="">All</option>
+          <option value="true">Confirmed</option>
+          <option value="false">Unconfirmed</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Sort By</label>
+        <select id="filter-sort">
+          <option value="date-desc">Date (Newest First)</option>
+          <option value="date-asc">Date (Oldest First)</option>
+          <option value="engagement-desc">Engagement (High to Low)</option>
+          <option value="engagement-asc">Engagement (Low to High)</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Search</label>
+        <input type="text" id="filter-search" placeholder="Search events..." />
+      </div>
+      <div class="filter-group filter-actions">
+        <button id="btn-clear-filters" class="btn-secondary">Clear Filters</button>
+        <span id="filter-count" class="filter-count"></span>
       </div>
     </div>
-  </main>
+
+    <!-- NEWS GRID -->
+    <div id="news-grid" class="news-grid"></div>
+  </div>
+
+  <!-- MAP TAB -->
+  <div id="tab-map" class="tab-content">
+    <div class="map-layout">
+      <!-- Map Controls -->
+      <div class="map-controls">
+        <div class="map-filter-group">
+          <label>Attacker</label>
+          <select id="map-filter-attacker">
+            <option value="">All Attackers</option>
+            <option value="United States">United States</option>
+            <option value="Israel">Israel</option>
+            <option value="Iran">Iran</option>
+            <option value="Houthi/Ansar Allah">Houthi/Ansar Allah</option>
+          </select>
+        </div>
+        <div class="map-filter-group">
+          <label>Weapon Type</label>
+          <select id="map-filter-weapon">
+            <option value="">All Weapons</option>
+            <option value="airstrike">Airstrike</option>
+            <option value="ballistic missile">Ballistic Missile</option>
+            <option value="cruise missile">Cruise Missile</option>
+            <option value="drone">Drone</option>
+          </select>
+        </div>
+        <div class="map-filter-group">
+          <label>Year</label>
+          <select id="map-filter-year">
+            <option value="">All Years</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+          </select>
+        </div>
+        <div class="map-filter-group">
+          <label>View</label>
+          <select id="map-filter-view">
+            <option value="strikes">Strike Events</option>
+            <option value="assets">Military Assets</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+        <div class="map-filter-group">
+          <label>&nbsp;</label>
+          <button id="map-reset" class="btn-secondary">Reset View</button>
+        </div>
+      </div>
+      <!-- Map -->
+      <div id="map" class="map-container"></div>
+      <!-- Strike List Panel -->
+      <div class="strike-list-panel">
+        <div class="panel-header">
+          <h3>Strike Events</h3>
+          <span id="strike-count" class="badge">0</span>
+        </div>
+        <div id="strike-list" class="strike-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ASSETS TAB -->
+  <div id="tab-assets" class="tab-content">
+    <div class="assets-layout">
+      <!-- Asset Filters -->
+      <div class="asset-filters">
+        <div class="filter-group">
+          <label>Nation</label>
+          <select id="asset-filter-nation">
+            <option value="">All Nations</option>
+            <option value="United States">United States</option>
+            <option value="Israel">Israel</option>
+            <option value="Iran">Iran</option>
+            <option value="Saudi Arabia">Saudi Arabia</option>
+            <option value="UAE">UAE</option>
+            <option value="Yemen (Houthi)">Yemen (Houthi)</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Asset Type</label>
+          <select id="asset-filter-type">
+            <option value="">All Types</option>
+            <option value="aircraft_carrier">Aircraft Carrier</option>
+            <option value="destroyer">Destroyer</option>
+            <option value="cruiser">Cruiser</option>
+            <option value="submarine">Submarine</option>
+            <option value="naval_base">Naval Base</option>
+            <option value="air_base">Air Base</option>
+            <option value="bomber">Bomber</option>
+            <option value="fighter_squadron">Fighter Squadron</option>
+            <option value="missile_defense">Missile Defense</option>
+            <option value="missile_battery">Missile Battery</option>
+            <option value="troops">Troops</option>
+            <option value="nuclear_site">Nuclear Site</option>
+            <option value="leadership">Leadership</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Status</label>
+          <select id="asset-filter-status">
+            <option value="">All Status</option>
+            <option value="deployed">Deployed</option>
+            <option value="active">Active</option>
+            <option value="ready">Ready</option>
+            <option value="damaged">Damaged</option>
+            <option value="destroyed">Destroyed</option>
+          </select>
+        </div>
+      </div>
+      <!-- Asset Grid -->
+      <div id="asset-grid" class="asset-grid"></div>
+    </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
   <script src="./news-data.js"></script>
+  <script src="./news-data-extra.js"></script>
   <script src="./strikes-data.js"></script>
+  <script src="./strikes-data-extra.js"></script>
   <script src="./meta-data.js"></script>
   <script src="./app-core.js"></script>
 </body>
